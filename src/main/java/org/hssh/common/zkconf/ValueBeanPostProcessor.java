@@ -2,11 +2,13 @@ package org.hssh.common.zkconf;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -18,6 +20,9 @@ import java.lang.reflect.Method;
 public class ValueBeanPostProcessor implements BeanPostProcessor {
 
     private static Logger logger = LoggerFactory.getLogger(ValueBeanPostProcessor.class);
+
+    @Resource
+    private ZkConfConfigProperties zkConfConfigProperties;
 
     @Override
     public Object postProcessBeforeInitialization(Object o, String s) throws BeansException {
@@ -46,15 +51,15 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
     private void initValueWithMethod(ValueWithMethod annotation, Object o , Method m)
     {
 
-        byte[] data = ValueChangeHandler.zkClient.readData(annotation.path());
+        byte[] data = ValueChangeHandler.zkClient.readData(getPath(annotation.path()));
         PropertiesConfiguration propertiesConfiguration = new PropertiesConfiguration();
         try
         {
             propertiesConfiguration.load(new ByteArrayInputStream(data), "utf-8");
             m.invoke(o, propertiesConfiguration);
 
-            ValueChangeHandler.mapMethod.put(annotation.path(), new ObjectMethod(o, m));
-            ValueChangeHandler.zkClient.subscribeDataChanges(annotation.path(), ValueChangeHandler.iZkDataListener);
+            ValueChangeHandler.mapMethod.put(getPath(annotation.path()), new ObjectMethod(o, m));
+            ValueChangeHandler.zkClient.subscribeDataChanges(getPath(annotation.path()), ValueChangeHandler.iZkDataListener);
 
         } catch (IllegalAccessException e)
         {
@@ -73,7 +78,7 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
 
     private void initValue(Value annotation, Object o, Field f)
     {
-        byte[] data = ValueChangeHandler.zkClient.readData(annotation.path());
+        byte[] data = ValueChangeHandler.zkClient.readData(getPath(annotation.path()));
         PropertiesConfiguration propertiesConfiguration = new PropertiesConfiguration();
         try {
             propertiesConfiguration.load(new ByteArrayInputStream(data), "utf-8");
@@ -81,8 +86,8 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
             f.set(o, propertiesConfiguration.getProperty(annotation.key()));
             logger.info("初始化zk变量成功:" + annotation.key() + ": " + propertiesConfiguration.getProperty(annotation.key()));
 
-            ValueChangeHandler.add(annotation.path(), annotation.key(), o, f);
-            ValueChangeHandler.zkClient.subscribeDataChanges(annotation.path(), ValueChangeHandler.iZkDataListener);
+            ValueChangeHandler.add(getPath(annotation.path()), annotation.key(), o, f);
+            ValueChangeHandler.zkClient.subscribeDataChanges(getPath(annotation.path()), ValueChangeHandler.iZkDataListener);
 
         } catch (ConfigurationException e) {
             e.printStackTrace();
@@ -94,5 +99,15 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessAfterInitialization(Object o, String s) throws BeansException {
         return o;
+    }
+
+    private String getPath(String annotationPath)
+    {
+        if(StringUtils.isNotBlank(zkConfConfigProperties.getProjectName()) && StringUtils.isNotBlank(zkConfConfigProperties.getBizName())) {
+            return "/config/" + zkConfConfigProperties.getProjectName().trim() + "/" + zkConfConfigProperties.getBizName().trim() + annotationPath;
+        } else if(StringUtils.isNotBlank(zkConfConfigProperties.getProjectName())) {
+            return "/config/" + zkConfConfigProperties.getProjectName().trim() + annotationPath;
+        }
+        return annotationPath;
     }
 }
