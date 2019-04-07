@@ -27,6 +27,9 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
     @Override
     public Object postProcessBeforeInitialization(Object o, String s) throws BeansException {
 
+        // 检查zkconf配置
+        checkProperties();
+
         Field[] fields = o.getClass().getDeclaredFields();
         for(Field f : fields) {
             Value annotation = f.getAnnotation(Value.class);
@@ -52,11 +55,9 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
     {
 
         byte[] data = ValueChangeHandler.zkClient.readData(getPath(annotation.path()));
-        PropertiesConfiguration propertiesConfiguration = new PropertiesConfiguration();
         try
         {
-            propertiesConfiguration.load(new ByteArrayInputStream(data), "utf-8");
-            m.invoke(o, propertiesConfiguration);
+            m.invoke(o, new ByteArrayInputStream(data));
 
             ValueChangeHandler.mapMethod.put(getPath(annotation.path()), new ObjectMethod(o, m));
             ValueChangeHandler.zkClient.subscribeDataChanges(getPath(annotation.path()), ValueChangeHandler.iZkDataListener);
@@ -65,9 +66,6 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
         {
             e.printStackTrace();
         } catch (InvocationTargetException e)
-        {
-            e.printStackTrace();
-        } catch (ConfigurationException e)
         {
             e.printStackTrace();
         }
@@ -101,13 +99,22 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
         return o;
     }
 
+
+    /**
+     * 检查zkconf配置
+     */
+    private void checkProperties() {
+        if (StringUtils.isBlank(zkConfConfigProperties.getBizName())) {
+            throw new IllegalArgumentException("请配置zkconf.bizName");
+        }
+
+        if (StringUtils.isBlank(zkConfConfigProperties.getProjectName())) {
+            throw new IllegalArgumentException("请配置zkconf.projectName");
+        }
+    }
+
     private String getPath(String annotationPath)
     {
-        if(StringUtils.isNotBlank(zkConfConfigProperties.getProjectName()) && StringUtils.isNotBlank(zkConfConfigProperties.getBizName())) {
-            return "/config/" + zkConfConfigProperties.getProjectName().trim() + "/" + zkConfConfigProperties.getBizName().trim() + annotationPath;
-        } else if(StringUtils.isNotBlank(zkConfConfigProperties.getProjectName())) {
-            return "/config/" + zkConfConfigProperties.getProjectName().trim() + annotationPath;
-        }
-        return annotationPath;
+        return "/config/" + zkConfConfigProperties.getBizName() + "/" + zkConfConfigProperties.getProjectName() + "/zkconf/" + annotationPath;
     }
 }

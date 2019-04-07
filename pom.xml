@@ -5,7 +5,7 @@
 
 	<groupId>org.hssh.common</groupId>
 	<artifactId>zkconf-starter</artifactId>
-	<version>0.0.3-SNAPSHOT</version>
+	<version>0.0.5</version>
 	<packaging>jar</packaging>
 
 	<name>zkconf</name>

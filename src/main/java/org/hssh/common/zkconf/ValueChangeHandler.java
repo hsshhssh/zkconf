@@ -45,13 +45,10 @@ public class ValueChangeHandler {
 
     private static void handlerVauleWithMethod(String dataPath, byte[] data) throws ConfigurationException, InvocationTargetException, IllegalAccessException
     {
-        PropertiesConfiguration properties = new PropertiesConfiguration();
-        properties.load(new ByteArrayInputStream(data), "utf-8");
-
         Set<ObjectMethod> objectMethods = mapMethod.get(dataPath);
         for (ObjectMethod objectMethod : objectMethods)
         {
-            objectMethod.getMethod().invoke(objectMethod.getObject(), properties);
+            objectMethod.getMethod().invoke(objectMethod.getObject(), new ByteArrayInputStream(data));
             logger.info("调用zkconf注册方法 method:{}", objectMethod.getMethod().getName());
         }
     }
