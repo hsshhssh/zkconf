@@ -1,13 +1,11 @@
 package org.hssh.common.zkconf;
 
-import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Created by hssh on 2017/2/18.
  */
 @ConfigurationProperties(prefix = ZkConfConfigProperties.ZKDB_PREFIX)
-@Data
 public class ZkConfConfigProperties
 {
 
@@ -23,4 +21,19 @@ public class ZkConfConfigProperties
      */
     private String bizName;
 
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getBizName() {
+        return bizName;
+    }
+
+    public void setBizName(String bizName) {
+        this.bizName = bizName;
+    }
 }
