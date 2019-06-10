@@ -105,16 +105,22 @@ public class ValueBeanPostProcessor implements BeanPostProcessor {
      */
     private void checkProperties() {
         if (StringUtils.isBlank(zkConfConfigProperties.getBizName())) {
-            throw new IllegalArgumentException("请配置zkconf.bizName");
+            logger.warn("没有配置zkconf.bizName");
+            //throw new IllegalArgumentException("请配置zkconf.bizName");
         }
 
         if (StringUtils.isBlank(zkConfConfigProperties.getProjectName())) {
-            throw new IllegalArgumentException("请配置zkconf.projectName");
+            logger.warn("没有配置zkconf.projectName");
+            //throw new IllegalArgumentException("请配置zkconf.projectName");
         }
     }
 
     private String getPath(String annotationPath)
     {
-        return "/config/" + zkConfConfigProperties.getBizName() + "/" + zkConfConfigProperties.getProjectName() + "/zkconf/" + annotationPath;
+        if (StringUtils.isBlank(zkConfConfigProperties.getBizName()) || StringUtils.isBlank(zkConfConfigProperties.getProjectName())) {
+            return annotationPath;
+        } else {
+            return "/config/" + zkConfConfigProperties.getBizName() + "/" + zkConfConfigProperties.getProjectName() + "/zkconf/" + annotationPath;
+        }
     }
 }
